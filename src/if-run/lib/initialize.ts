@@ -56,10 +56,20 @@ const importAndVerifyModule = async (method: string, path: string) => {
  * Then checks if `path` is starting with github, then grabs the repository name.
  * Imports module, then checks if it's a valid plugin.
  */
-const handModule = (method: string, pluginPath: string) => {
+const handModule = (
+  method: string,
+  pluginPath: string,
+  disableExternalPluginWarning: boolean,
+  disabledPlugins: Set<string>
+) => {
   console.debug(LOADING_PLUGIN_FROM_PATH(method, pluginPath), '\n');
 
   if (pluginPath === 'builtin') {
+    if (disabledPlugins.has('builtin:' + method)) {
+      throw new PluginInitializationError(
+        INVALID_MODULE_PATH(`builtin:${method}`)
+      );
+    }
     pluginPath = path.normalize(`${__dirname}/../builtins`);
   } else {
     if (pluginPath?.startsWith(GITHUB_PATH)) {
@@ -67,7 +77,13 @@ const handModule = (method: string, pluginPath: string) => {
       pluginPath = parts[parts.length - 1];
     }
 
-    if (!pluginPath.includes(NATIVE_PLUGIN)) {
+    if (disabledPlugins.has(`${pluginPath}:${method}`)) {
+      throw new PluginInitializationError(
+        INVALID_MODULE_PATH(`${pluginPath}:${method}`)
+      );
+    }
+
+    if (!disableExternalPluginWarning && !pluginPath.includes(NATIVE_PLUGIN)) {
       memoizedLog(logger.warn, NOT_NATIVE_PLUGIN(pluginPath));
     }
   }
@@ -79,7 +95,9 @@ const handModule = (method: string, pluginPath: string) => {
  * Initializes plugin with config.
  */
 const initPlugin = async (
-  initPluginParams: PluginOptions
+  initPluginParams: PluginOptions,
+  disableExternalPluginWarning: boolean,
+  disabledPlugins: Set<string>
 ): Promise<PluginInterface> => {
   const {
     method,
@@ -97,7 +115,12 @@ const initPlugin = async (
     throw new MissingPluginPathError(MISSING_PATH);
   }
 
-  const plugin = await handModule(method, path);
+  const plugin = await handModule(
+    method,
+    path,
+    disableExternalPluginWarning,
+    disabledPlugins
+  );
 
   return plugin(config, parameterMetadata, mapping);
 };
@@ -110,16 +133,24 @@ const initPlugin = async (
  *    Then stores the aggregation metrics for each parameter to override stub values.
  */
 export const initialize = async (
-  context: Context
+  context: Context,
+  disableExternalPluginWarning = false,
+  disabledPlugins?: Set<string>
 ): Promise<PluginStorageInterface> => {
   console.debug(INITIALIZING_PLUGINS, '\n');
   const {plugins} = context.initialize;
   const storage = pluginStorage();
 
+  disabledPlugins ||= new Set<string>();
+
   for await (const pluginName of Object.keys(plugins)) {
     console.debug(INITIALIZING_PLUGIN(pluginName));
 
-    const plugin = await initPlugin(plugins[pluginName]);
+    const plugin = await initPlugin(
+      plugins[pluginName],
+      disableExternalPluginWarning,
+      disabledPlugins
+    );
     const parameters = {...plugin.metadata.inputs, ...plugin.metadata.outputs};
 
     Object.keys(parameters).forEach(current => {

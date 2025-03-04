@@ -60,6 +60,224 @@ if-run --help
 if-run -h
 ```
 
+### Using API server
+
+The Impact Framework also provides an API server. By default, it listens on localhost:3000, but this can be changed.
+
+```sh
+# Run the API server listening on the default localhost:3000.
+$ if-api
+
+# Run the API server listening on 0.0.0.0:8080.
+$ if-api -h 0.0.0.0 -p 8080
+```
+
+If the API server is running, you can send a manifest in the request body and receive the results of `if-run` as a response.
+
+```sh
+# Health check
+$ curl http://localhost:3000/health
+
+# Process manifest (YAML request)
+$ curl -H "Content-Type: application/vnd.if-manifest+yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
+# Content-Type can also be application/yaml.
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
+
+# Process manifest (JSON request)
+$ curl -H "Content-Type: application/vnd.if-manifest+json" --data-binary @manifest.json http://localhost:3000/v1/run
+# Content-Type can also be application/json.
+$ curl --json @manifest.json http://localhost:3000/v1/run
+```
+
+## Using Docker Container
+
+The Impact Framework API server can also be run as a Docker container.
+
+### Building the Container Image
+
+You can build the container image using the provided Dockerfile and build script:
+
+```sh
+# Build with default image name (ghcr.io/Green-Software-Foundation/if:latest) and push the image to registry
+$ bin/build-image.sh
+
+# Build with custom image name (myorg/if-api) and push the image to registry
+$ bin/build-image.sh --name myorg/if-api --tag v1.0.0
+```
+
+The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
+
+Please note that the build script requires you to perform `docker login` in advance in order to push container images to the registry.
+
+### Running the Container
+
+Run a container using the built image:
+
+```sh
+# Run with default port (3000)
+$ docker run --rm -p 3000:3000 ghcr.io/Green-Software-Foundation/if:latest
+
+# Run with custom port
+$ docker run --rm -p 8080:3000 ghcr.io/Green-Software-Foundation/if:latest
+```
+
+### Using the containerized API server
+
+The containerized API server provides the same endpoints as the regular API server:
+
+```sh
+# Health check
+$ curl http://localhost:3000/health
+
+# Process manifest (YAML request)
+$ curl -H "Content-Type: application/vnd.if-manifest+yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
+# Content-Type can also be application/yaml.
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
+
+# Process manifest (JSON request)
+$ curl -H "Content-Type: application/vnd.if-manifest+json" --data-binary @manifest.json http://localhost:3000/v1/run
+# Content-Type can also be application/json.
+$ curl --json @manifest.json http://localhost:3000/v1/run
+```
+
+### Adding external plugins at startup time
+You can add any external plugins at startup time by mounting a file that lists the plugins to `/app/plugins.txt`.
+```sh
+$ cat plugins.txt
+carbon-intensity-plugin
+Green-Software-Foundation/if-github-plugin
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt ghcr.io/Green-Software-Foundation/if:latest
+```
+
+The contents of `/app/plugins.txt` are used directly as arguments for `npm install`. For available formats, refer to: https://docs.npmjs.com/cli/v8/commands/npm-install
+
+If the plugin itself or packages it depends on are private, you'll need to mount an `.npmrc` file for the access token required to install packages.
+```sh
+$ cat plugins.txt
+@myscope/myplugin
+$ cat .npmrc
+//registry.npmjs.org/:_authToken=<YOUR_AUTH_TOKEN>
+@myscope:registry=https://registry.npmjs.org/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
+```
+
+For `.npmrc` format reference: https://docs.npmjs.com/cli/v8/configuring-npm/npmrc
+
+Note that if the plugin itself or packages it depends on are in GitHub Packages, a personal access token (classic) with `read:packages` permission is required even for public packages.
+```sh
+$ cat plugins.txt
+danuw/if-casdk-plugin
+$ cat .npmrc
+//npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
+```
+
+Alternatively, the access token can also be extracted to an environment variable.
+```sh
+$ cat plugins.txt
+@myscope/myplugin
+$ cat .npmrc
+//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+@myscope:registry=https://registry.npmjs.org/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -e NODE_AUTH_TOKEN=<YOUR_AUTH_TOKEN> -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
+```
+
+### Building the Container Image with external plugins
+
+You can also create container images that include external plugins in advance.
+
+```sh
+$ cat plugins.txt
+carbon-intensity-plugin
+Green-Software-Foundation/if-github-plugin
+$ bin/build-image.sh --name myorg/if-api-with-plugins --tag v1.0.0 --plugins plugins.txt
+```
+
+A `.npmrc` is required if you need an access token, as well as if you want to add external plugins when starting the container.
+
+```sh
+$ cat plugins.txt
+danuw/if-casdk-plugin
+$ cat .npmrc
+//npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ bin/build-image.sh --name myorg/if-api-with-plugins --tag v1.0.0 --plugins plugins.txt --npmrc .npmrc
+```
+
+## Deploy the API server to Kubernetes
+
+The Impact Framework also provides a helm chart for running the API server on a Kubernetes cluster.
+
+```sh
+$ helm install if-api ./helm-chart --set image.repository=myorg/if-api,image.tag=v1.0.0
+```
+
+### Adding Plugins
+
+You can also install additional plugins.
+
+```yaml
+additionalPlugins:
+- carbon-intensity-plugin
+- Green-Software-Foundation/if-github-plugin
+```
+
+If an `.npmrc` file is required, you can create a `Secret` by specifying it in the `npmrc.data` section of the `values.yaml` file.
+
+```yaml
+additionalPlugins:
+- Green-Software-Foundation/community-plugins
+- danuw/if-casdk-plugin
+
+npmrc:
+  data: |
+    //npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+    @Green-Software-Foundation:registry=https://npm.pkg.github.com/
+```
+
+You can also extract the access token as an environment variable and change the `.npmrc` to a `ConfigMap`.
+
+```yaml
+additionalPlugins:
+- Green-Software-Foundation/community-plugins
+- danuw/if-casdk-plugin
+
+npmrc:
+  useConfigMap: true
+  data: |
+    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+    @Green-Software-Foundation:registry=https://npm.pkg.github.com/
+
+env:
+  secret:
+    GITHUB_TOKEN: <YOUR_PERSONAL_ACCESS_TOKEN>
+```
+
+### Using Kubernetes service
+
+By default, a `ClusterIP` service is deployed, so you can access the API server by running `kubectl port-forward`.
+
+```sh
+$ kubectl port-forward svc/if-api 3000:3000 &
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+```
+
+You can access the API server from outside the cluster without using `port-forward` by changing the service type to `NodePort` or `LoadBalancer`.
+
+```sh
+# Using NodePort
+$ cat values-nodeport.yaml
+service:
+  type: NodePort
+  nodePort: 32000
+
+# Using LoadBalancer
+$ cat values-lb.yaml
+service:
+  type: LoadBalancer
+```
+
 ## Documentation
 
 Please read our documentation at [if.greensoftware.foundation](https://if.greensoftware.foundation/)
