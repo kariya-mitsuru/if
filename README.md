@@ -60,6 +60,110 @@ if-run --help
 if-run -h
 ```
 
+### Using API server
+
+The Impact Framework also provides an API server. By default, it listens on localhost:3000, but this can be changed.
+
+```sh
+# Run the API server listening on the default localhost:3000.
+if-api
+
+# Run the API server listening on 0.0.0.0:8080.
+if-api -h 0.0.0.0 -p 8080
+```
+
+If the API server is running, you can send a manifest in the request body and receive the results of `if-run` as a response.
+
+```sh
+# Health check
+curl http://localhost:3000/health
+
+# Process manifest (YAML request)
+curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+
+# Process manifest (JSON request)
+curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
+```
+
+## Using Docker Container
+
+The Impact Framework API server can also be run as a Docker container.
+
+### Building the Container Image
+
+You can build the container image using the provided Dockerfile and build script:
+
+```sh
+# Build with default image name (ghcr.io/Green-Software-Foundation/if:latest) and push the image to registry
+bin/build-image.sh
+
+# Build with custom image name (myorg/if-api) and push the image to registry
+bin/build-image.sh --name myorg/if-api --tag v1.0.0
+```
+
+The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
+
+Please note that the build script requires you to perform docker login in advance in order to push container images to the registry.
+
+### Running the Container
+
+Run a container using the built image:
+
+```sh
+# Run with default port (3000)
+docker run --rm -p 3000:3000 ghcr.io/Green-Software-Foundation/if:latest
+
+# Run with custom port
+docker run --rm -p 8080:3000 ghcr.io/Green-Software-Foundation/if:latest
+```
+
+### Adding Plugins
+You can add custom plugins at runtime by mounting a file that lists the plugins to `/app/plugins.txt`.
+
+```
+$ cat plugins.txt
+carbon-intensity-plugin
+Green-Software-Foundation/if-github-plugin
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt ghcr.io/Green-Software-Foundation/if:latest
+```
+
+If the plugin itself or its dependencies are hosted on GitHub Packages, you will need a personal access token (classic) with at least `read:packages` permission. In such cases, mounting an `.npmrc` file is also required.
+
+```
+$ cat plugins.txt
+danuw/if-casdk-plugin
+$ cat .npmrc
+//npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
+```
+
+Alternatively, you can extract the personal access token into an environment variable.
+
+```
+$ cat plugins.txt
+danuw/if-casdk-plugin
+$ cat .npmrc
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -e GITHUB_TOKEN=<YOUR_PERSONAL_ACCESS_TOKEN> -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
+```
+
+### Using the containerized API server
+
+The containerized API server provides the same endpoints as the regular API server:
+
+```sh
+# Health check
+curl http://localhost:3000/health
+
+# Process manifest (YAML request)
+curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+
+# Process manifest (JSON request)
+curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
+```
+
 ## Documentation
 
 Please read our documentation at [if.greensoftware.foundation](https://if.greensoftware.foundation/)
