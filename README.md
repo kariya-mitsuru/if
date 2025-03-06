@@ -81,3 +81,54 @@ Please read the full contribution guidelines at [if.greensoftware.foundation](ht
 To report bugs please use our bug report template. You can do this by opening a new issue and selecting `Bug Report` when you are prompted to pick a template. The more information you provide,.the quicker we will be able to reproduce, diagnose and triage your issue.
 
 To read about our bug reporting and triage process, please see [our contribution guidelines](contributing.md#reporting-bugs).
+
+## Using Docker Container
+
+The Impact Framework API server can also be run as a Docker container.
+
+### Building the Container Image
+
+You can build the container image using the provided Dockerfile and build script:
+
+```sh
+# Grant execution permission
+chmod +x build-image.sh
+
+# Build with default settings (saved as local image)
+./build-image.sh
+
+# Build with custom image name and tag
+./build-image.sh --name myorg/if-api --tag v1.0.0
+
+# Build and push the image to registry
+./build-image.sh --name myorg/if-api --tag v1.0.0 --push
+```
+
+The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
+
+### Running the Container
+
+Run a container using the built image:
+
+```sh
+# Run with default port (3000)
+docker run -p 3000:3000 grnsft/if-api:latest
+
+# Run with custom port
+docker run -p 8080:3000 grnsft/if-api:latest
+```
+
+### Using the API
+
+The containerized API server provides the same endpoints as the regular IF server:
+
+```sh
+# Health check
+curl http://localhost:3000/health
+
+# Process manifest (JSON request)
+curl -X POST -H "Content-Type: application/json" -d @manifest.json http://localhost:3000/run
+
+# Process manifest (YAML request)
+curl -X POST -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+```

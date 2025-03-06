@@ -1,0 +1,29 @@
+# ドットファイル
+.*
+
+# Node.js 関連
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# ビルド成果物
+build
+dist
+
+# サンプルファイル
+manifests
+
+# テスト関連
+coverage
+__tests__
+__mocks__
+jest.config.js
+tsconfig.test.json
+
+# その他
+*.md
+*.png
+
+# Dockerファイル自体
+Dockerfile
