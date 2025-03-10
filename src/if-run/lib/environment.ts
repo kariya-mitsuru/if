@@ -1,11 +1,10 @@
 import {DateTime} from 'luxon';
+import Arborist = require('@npmcli/arborist');
 
 import {osInfo} from '../util/os-checker';
-import {execPromise} from '../../common/util/helpers';
 import {Manifest} from '../../common/types/manifest';
 
 import {STRINGS} from '../config/strings';
-import {NpmListResponse, PackageDependency} from '../types/environment';
 
 const packageJson = require('../../../package.json');
 
@@ -35,35 +34,33 @@ const getProcessStartingTimestamp = () => {
 /**
  * Goes through the dependencies, converts them into oneliner.
  */
-const flattenDependencies = (dependencies: [string, PackageDependency][]) =>
-  dependencies.map(dependency => {
-    const [packageName, versionInfo] = dependency;
-    const {version, extraneous, resolved} = versionInfo;
-    const ifExtraneous = extraneous ? ` extraneous -> ${resolved}` : '';
-    const ifFromGithub =
-      resolved && resolved.startsWith('git') ? ` (${resolved})` : '';
-    const formattedString = `${packageName}@${version}${
-      ifExtraneous || ifFromGithub
-    }`;
-
-    return formattedString;
-  });
+const convertEdge = ([packageName, edge]: [string, Arborist.Edge]) => {
+  const {version, extraneous, resolved} = edge.to!;
+  const ifExtraneous = extraneous ? ` extraneous -> ${resolved}` : '';
+  const ifFromGithub =
+    resolved && resolved.startsWith('git') ? ` (${resolved})` : '';
+  return `${packageName}@${version}${ifExtraneous || ifFromGithub}`;
+};
 
 /**
  * 1. Runs `npm list --json`.
  * 2. Parses json data and converts to list.
+ *
+ * 注: 外部コマンドを実行せずに@npmcli/arboristを使用して依存関係情報を取得するように変更
  */
 const listDependencies = async () => {
-  const {stdout} = await execPromise('npm list --json');
-  const npmListResponse: NpmListResponse = JSON.parse(stdout);
+  try {
+    // Arboristインスタンスを作成
+    const arborist = new Arborist({path: process.cwd()});
 
-  if (npmListResponse.dependencies) {
-    const dependencies = Object.entries(npmListResponse.dependencies);
+    // 依存関係ツリーを読み込む
+    const tree = await arborist.loadActual();
 
-    return flattenDependencies(dependencies);
+    return Array.from(tree.edgesOut, convertEdge).sort();
+  } catch (error) {
+    console.error('Error listing dependencies:', error);
+    return [];
   }
-
-  return [];
 };
 
 /**

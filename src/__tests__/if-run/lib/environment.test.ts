@@ -1,41 +1,68 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import {execPromise} from '../../../common/util/helpers';
+import {injectEnvironment} from '../../../if-run/lib/environment';
 
-jest.mock('../../../common/util/helpers', () => {
-  const originalModule = jest.requireActual('../../../common/util/helpers');
-
-  return {
-    ...originalModule,
-    execPromise: jest.fn(async (...args) => {
-      if (process.env.EXECUTE === 'invalid') {
-        return {
-          stdout: JSON.stringify({
-            version: '0.7.2',
-            name: '@grnsft/if',
-          }),
-        };
-      } else if (process.env.EXECUTE === 'true') {
-        return {
-          stdout: JSON.stringify({
-            version: '0.7.2',
-            name: '@grnsft/if',
-            dependencies: {
-              'release-iterator': {
-                version: '0.7.2',
-                resolved: 'git@github.com:Green-Software-Foundation/if.git',
-                overridden: false,
-              },
-            },
-          }),
-        };
-      }
-
-      return originalModule.execPromise(...args);
-    }),
-  };
+// Arboristのモック
+const mockLoadActual = jest
+  .fn()
+  .mockImplementation(() => Promise.resolve({children: new Map()}));
+jest.mock('@npmcli/arborist', () => {
+  return jest.fn().mockImplementation(() => ({
+    loadActual: mockLoadActual,
+  }));
 });
 
-import {injectEnvironment} from '../../../if-run/lib/environment';
+// osInfoのモック
+jest.mock('../../../if-run/util/os-checker', () => ({
+  osInfo: jest.fn().mockResolvedValue({
+    os: 'darwin',
+    'os-version': '10.15.7',
+  }),
+}));
+
+// luxonのモック
+jest.mock('luxon', () => ({
+  DateTime: {
+    local: jest.fn().mockReturnValue({
+      minus: jest.fn().mockReturnValue({
+        toUTC: jest.fn().mockReturnValue({
+          toString: jest.fn().mockReturnValue('2021-01-01T00:00:00.000Z'),
+        }),
+      }),
+    }),
+  },
+}));
+
+// packageJsonのモックを作成
+jest.mock(
+  '../../../package.json',
+  () => ({
+    version: '0.7.2',
+  }),
+  {virtual: true}
+);
+
+// テスト用のデータを設定する関数
+const setupTestData = (testCase: string): void => {
+  if (testCase === 'true') {
+    mockLoadActual.mockResolvedValueOnce({
+      edgesOut: new Map([
+        [
+          'release-iterator',
+          {
+            to: {
+              version: '0.7.2',
+              resolved: 'git@github.com:Green-Software-Foundation/if.git',
+              extraneous: false,
+              overridden: false,
+            },
+          },
+        ],
+      ]),
+    });
+  } else {
+    mockLoadActual.mockResolvedValueOnce({edgesOut: new Map()});
+  }
+};
 
 describe('lib/environment: ', () => {
   describe('injectEnvironment(): ', () => {
@@ -61,19 +88,11 @@ describe('lib/environment: ', () => {
 
     it('checks if dependency has github link.', async () => {
       process.env.EXECUTE = 'true';
+      setupTestData('true');
       // @ts-ignore
       const response = await injectEnvironment(context);
       const {execution} = response;
 
-      const mockStdout = JSON.stringify({version: '0.7.2', name: '@grnsft/if'});
-
-      // @ts-ignore
-      (execPromise as jest.Mock).mockResolvedValue({
-        stdout: mockStdout,
-        stderr: '',
-      });
-
-      expect.assertions(3);
       expect(execution).toHaveProperty('command');
       expect(execution?.environment).toHaveProperty('dependencies');
       expect(execution?.environment?.dependencies).toEqual([
@@ -85,19 +104,11 @@ describe('lib/environment: ', () => {
 
     it('checks if stdout do not have dependency property.', async () => {
       process.env.EXECUTE = 'invalid';
+      setupTestData('invalid');
       // @ts-ignore
       const response = await injectEnvironment(context);
       const {execution} = response;
 
-      const mockStdout = JSON.stringify({version: '0.7.2', name: '@grnsft/if'});
-
-      // @ts-ignore
-      (execPromise as jest.Mock).mockResolvedValue({
-        stdout: mockStdout,
-        stderr: '',
-      });
-
-      expect.assertions(3);
       expect(execution).toHaveProperty('command');
       expect(execution?.environment).toHaveProperty('dependencies');
       expect(execution?.environment?.dependencies).toEqual([]);
@@ -110,7 +121,6 @@ describe('lib/environment: ', () => {
       const response = await injectEnvironment(context);
       const environment = response.execution!.environment!;
 
-      expect.assertions(5);
       expect(typeof environment['date-time']).toEqual('string');
       expect(Array.isArray(environment.dependencies)).toBeTruthy();
       expect(typeof environment['node-version']).toEqual('string');
