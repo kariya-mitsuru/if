@@ -7,7 +7,7 @@ const {LOADING_MANIFEST} = STRINGS;
 /**
  * Parses manifest file as an object.
  */
-export const load = async (inputPath: string) => {
+export const load = async (inputPath: string | null) => {
   console.debug(LOADING_MANIFEST);
 
   const rawManifest = await openYamlFileAsObject<any>(inputPath);

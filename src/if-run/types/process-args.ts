@@ -10,7 +10,7 @@ export interface IfRunArgs {
 }
 
 export interface ProcessArgsOutputs {
-  inputPath: string;
+  inputPath: string | null;
   outputOptions: {
     outputPath?: string;
     noOutput?: boolean;

@@ -28,10 +28,18 @@ export const prependFullFilePath = (filePath: string) => {
  * Checks if there is data piped, then collects it.
  * Otherwise returns empty string.
  */
-const collectPipedData = async () => {
+export const collectPipedData = async () => {
   if (process.stdin.isTTY) {
     return '';
   }
+
+  /*
+  const buffers: string[] = [];
+  for await (const chunk of process.stdin) {
+    buffers.push(chunk);
+  }
+  return buffers.join('');
+  */
 
   const readline = createInterface({
     input: process.stdin,

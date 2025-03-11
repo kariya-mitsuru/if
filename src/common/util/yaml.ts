@@ -3,15 +3,23 @@ import * as path from 'path';
 
 import * as YAML from 'js-yaml';
 import {ERRORS} from '@grnsft/if-core/utils';
+import {collectPipedData} from './helpers';
 
 const {ReadFileError, WriteFileError} = ERRORS;
 
 /**
  * Reads and parses `yaml` file to object.
  */
-export const openYamlFileAsObject = async <T>(filePath: string): Promise<T> => {
+export const openYamlFileAsObject = async <T>(
+  filePath: string | null
+): Promise<T> => {
   try {
-    const yamlFileBuffer = await fs.readFile(filePath, 'utf8');
+    let yamlFileBuffer: string;
+    if (!filePath) {
+      yamlFileBuffer = await collectPipedData();
+    } else {
+      yamlFileBuffer = await fs.readFile(filePath, 'utf8');
+    }
 
     return YAML.load(yamlFileBuffer) as T;
   } catch (error: any) {

@@ -15,7 +15,7 @@ const {CliSourceFileError} = ERRORS;
 
 const {ARGS, HELP} = CONFIG;
 const {NO_OUTPUT} = STRINGS;
-const {SOURCE_IS_NOT_YAML, MANIFEST_IS_MISSING} = COMMON_STRINGS;
+const {SOURCE_IS_NOT_YAML} = COMMON_STRINGS;
 
 /**
  * Validates `if-run` process arguments.
@@ -57,24 +57,19 @@ export const parseIfRunProcessArgs = (): ProcessArgsOutputs => {
     logger.warn(NO_OUTPUT);
   }
 
-  if (manifest) {
-    if (checkIfFileIsYaml(manifest)) {
-      return {
-        inputPath: prependFullFilePath(manifest),
-        outputOptions: {
-          ...(output && {outputPath: prependFullFilePath(output)}),
-          ...(noOutput && {noOutput}),
-        },
-        debug,
-        observe,
-        regroup,
-        compute,
-        ...(append && {append}),
-      };
-    }
-
+  if (manifest && !checkIfFileIsYaml(manifest)) {
     throw new CliSourceFileError(SOURCE_IS_NOT_YAML);
   }
-
-  throw new CliSourceFileError(MANIFEST_IS_MISSING);
+  return {
+    inputPath: manifest ? prependFullFilePath(manifest) : null,
+    outputOptions: {
+      ...(output && {outputPath: prependFullFilePath(output)}),
+      ...(noOutput && {noOutput}),
+    },
+    debug,
+    observe,
+    regroup,
+    compute,
+    ...(append && {append}),
+  };
 };
