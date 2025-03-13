@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "if-api.fullname" . }}
+  labels:
+    {{- include "if-api.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: http
+    name: http
+  selector:
+    {{- include "if-api.selectorLabels" . | nindent 4 }}

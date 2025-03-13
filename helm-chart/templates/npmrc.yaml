@@ -1,0 +1,19 @@
+{{- if .Values.npmrc.data -}}
+apiVersion: v1
+{{- if .Values.npmrc.useConfigMap }}
+kind: ConfigMap
+{{- else }}
+kind: Secret
+{{- end }}
+metadata:
+  name: npmrc
+  labels:
+    {{- include "if-api.labels" . | nindent 4 }}
+{{- if .Values.npmrc.useConfigMap }}
+data:
+{{- else }}
+stringData:
+{{- end }}
+  .npmrc: |
+    {{- .Values.npmrc.data | nindent 4 }}
+{{- end }}
