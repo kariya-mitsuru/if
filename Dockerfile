@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get --no-install-recommends install -y lsb-release
 
 # 実行ユーザを設定
-USER node
+USER 1000
 
 # アプリケーションディレクトリを作成
 WORKDIR /app
