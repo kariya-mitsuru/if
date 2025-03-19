@@ -42,7 +42,9 @@ FROM $BASEIMAGE
 # lsb_release をインストール
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get --no-install-recommends install -y lsb-release
+    apt-get update && \
+    apt-get --no-install-recommends install -y \
+    lsb-release git ca-certificates
 
 # 実行ユーザを設定
 USER 1000
