@@ -10,5 +10,8 @@ spec:
   - port: {{ .Values.service.port }}
     targetPort: http
     name: http
+    {{- with .Values.service.nodePort }}
+    nodePort: {{ . }}
+    {{- end }}
   selector:
     {{- include "if-api.selectorLabels" . | nindent 4 }}

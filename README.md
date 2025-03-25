@@ -66,23 +66,23 @@ The Impact Framework also provides an API server. By default, it listens on loca
 
 ```sh
 # Run the API server listening on the default localhost:3000.
-if-api
+$ if-api
 
 # Run the API server listening on 0.0.0.0:8080.
-if-api -h 0.0.0.0 -p 8080
+$ if-api -h 0.0.0.0 -p 8080
 ```
 
 If the API server is running, you can send a manifest in the request body and receive the results of `if-run` as a response.
 
 ```sh
 # Health check
-curl http://localhost:3000/health
+$ curl http://localhost:3000/health
 
 # Process manifest (YAML request)
-curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
 
 # Process manifest (JSON request)
-curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
+$ curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
 ```
 
 ## Using Docker Container
@@ -95,10 +95,10 @@ You can build the container image using the provided Dockerfile and build script
 
 ```sh
 # Build with default image name (ghcr.io/Green-Software-Foundation/if:latest) and push the image to registry
-bin/build-image.sh
+$ bin/build-image.sh
 
 # Build with custom image name (myorg/if-api) and push the image to registry
-bin/build-image.sh --name myorg/if-api --tag v1.0.0
+$ bin/build-image.sh --name myorg/if-api --tag v1.0.0
 ```
 
 The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
@@ -111,10 +111,10 @@ Run a container using the built image:
 
 ```sh
 # Run with default port (3000)
-docker run --rm -p 3000:3000 ghcr.io/Green-Software-Foundation/if:latest
+$ docker run --rm -p 3000:3000 ghcr.io/Green-Software-Foundation/if:latest
 
 # Run with custom port
-docker run --rm -p 8080:3000 ghcr.io/Green-Software-Foundation/if:latest
+$ docker run --rm -p 8080:3000 ghcr.io/Green-Software-Foundation/if:latest
 ```
 
 ### Adding Plugins
@@ -155,14 +155,65 @@ The containerized API server provides the same endpoints as the regular API serv
 
 ```sh
 # Health check
-curl http://localhost:3000/health
+$ curl http://localhost:3000/health
 
 # Process manifest (YAML request)
-curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
 
 # Process manifest (JSON request)
-curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
+$ curl -H "Content-Type: application/json" --data-binary @manifest.json http://localhost:3000/run
 ```
+
+## Deploy the API server to Kubernetes
+
+The Impact Framework also provides a helm chart for running the API server on a Kubernetes cluster.
+
+```sh
+$ helm install if-api ./helm-chart --set image.repository=myorg/if-api,image.tag=v1.0.0
+```
+
+### Adding Plugins
+
+You can also install additional plugins.
+
+```yaml:values.yaml
+additionalPlugins:
+- carbon-intensity-plugin
+- Green-Software-Foundation/if-github-plugin
+```
+
+If an `.npmrc` file is required, you can create a `Secret` by specifying it in the `npmrc.data` section of the `values.yaml` file.
+
+```yaml:values.yaml
+additionalPlugins:
+- Green-Software-Foundation/community-plugins
+- danuw/if-casdk-plugin
+
+npmrc:
+  data: |
+    //npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+    @Green-Software-Foundation:registry=https://npm.pkg.github.com/
+```
+
+You can also extract the access token as an environment variable and change the `.npmrc` to a `ConfigMap`.
+
+```yaml:values.yaml
+additionalPlugins:
+- Green-Software-Foundation/community-plugins
+- danuw/if-casdk-plugin
+
+npmrc:
+  useConfigMap: true
+  data: |
+    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+    @Green-Software-Foundation:registry=https://npm.pkg.github.com/
+
+env:
+  secret:
+    GITHUB_TOKEN: <YOUR_PERSONAL_ACCESS_TOKEN>
+```
+
+### Using Kubernetes service
 
 ## Documentation
 
