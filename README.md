@@ -103,7 +103,7 @@ $ bin/build-image.sh --name myorg/if-api --tag v1.0.0
 
 The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
 
-Please note that the build script requires you to perform docker login in advance in order to push container images to the registry.
+Please note that the build script requires you to perform `docker login` in advance in order to push container images to the registry.
 
 ### Running the Container
 
@@ -176,7 +176,7 @@ $ helm install if-api ./helm-chart --set image.repository=myorg/if-api,image.tag
 
 You can also install additional plugins.
 
-```yaml:values.yaml
+```yaml
 additionalPlugins:
 - carbon-intensity-plugin
 - Green-Software-Foundation/if-github-plugin
@@ -184,7 +184,7 @@ additionalPlugins:
 
 If an `.npmrc` file is required, you can create a `Secret` by specifying it in the `npmrc.data` section of the `values.yaml` file.
 
-```yaml:values.yaml
+```yaml
 additionalPlugins:
 - Green-Software-Foundation/community-plugins
 - danuw/if-casdk-plugin
@@ -197,7 +197,7 @@ npmrc:
 
 You can also extract the access token as an environment variable and change the `.npmrc` to a `ConfigMap`.
 
-```yaml:values.yaml
+```yaml
 additionalPlugins:
 - Green-Software-Foundation/community-plugins
 - danuw/if-casdk-plugin
@@ -214,6 +214,28 @@ env:
 ```
 
 ### Using Kubernetes service
+
+By default, a `ClusterIP` service is deployed, so you can access the API server by running `kubectl port-forward`.
+
+```sh
+$ kubectl port-forward svc/if-api 3000:3000 &
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+```
+
+You can access the API server from outside the cluster without using `port-forward` by changing the service type to `NodePort` or `LoadBalancer`.
+
+```sh
+# Using NodePort
+$ cat values-nodeport.yaml
+service:
+  type: NodePort
+  nodePort: 32000
+
+# Using LoadBalancer
+$ cat values-lb.yaml
+service:
+  type: LoadBalancer
+```
 
 ## Documentation
 

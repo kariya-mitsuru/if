@@ -4,6 +4,10 @@ metadata:
   name: {{ include "if-api.fullname" . }}
   labels:
     {{- include "if-api.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -15,3 +19,6 @@ spec:
     {{- end }}
   selector:
     {{- include "if-api.selectorLabels" . | nindent 4 }}
+  {{- with .Values.service.loadBalancerClass }}
+  loadBalancerClass: {{ . }}
+  {{- end }}
