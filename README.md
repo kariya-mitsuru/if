@@ -113,22 +113,7 @@ $ curl -H "Content-Type: application/vnd.if-manifest+yaml" --data-binary @manife
 ## Using Docker Container
 
 The Impact Framework API server can also be run as a Docker container.
-
-### Building the Container Image
-
-You can build the container image using the provided Dockerfile and build script:
-
-```sh
-# Build with default image name (ghcr.io/Green-Software-Foundation/if:latest) and push the image to registry
-$ bin/build-image.sh
-
-# Build with custom image name (myorg/if-api) and push the image to registry
-$ bin/build-image.sh --name myorg/if-api --tag v1.0.0
-```
-
-The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
-
-Please note that the build script requires you to perform `docker login` in advance in order to push container images to the registry.
+The official image is provided at `ghcr.io/Green-Software-Foundation/if`.
 
 ### Running the Container
 
@@ -203,6 +188,19 @@ $ cat .npmrc
 @myscope:registry=https://registry.npmjs.org/
 $ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -e NODE_AUTH_TOKEN=<YOUR_AUTH_TOKEN> -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/Green-Software-Foundation/if:latest
 ```
+
+### Building the Container Image
+
+As mentioned above, there are official images available, but you can also build your own container image using the provided `Dockerfile` and build script:
+
+```sh
+# Build and push the image to registry
+$ bin/build-image.sh --name myorg/if-api --tag v1.0.0
+```
+
+The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
+
+Please note that the build script requires you to perform `docker login` in advance in order to push container images to the registry.
 
 ### Building the Container Image with external plugins
 
