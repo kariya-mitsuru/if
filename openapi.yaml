@@ -6,7 +6,7 @@ info:
   license:
     name: MIT license
     url: https://github.com/Green-Software-Foundation/if/blob/main/LICENSE
-  version: 1.0.1
+  version: 1.0.0
 externalDocs:
   description: Find out more about Impact Framework
   url: https://if.greensoftware.foundation/
