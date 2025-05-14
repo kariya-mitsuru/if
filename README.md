@@ -295,20 +295,24 @@ By default, a `ClusterIP` service is deployed, so you can access the API server 
 
 ```sh
 $ kubectl port-forward svc/if-api 3000:3000 &
-$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/run
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
 ```
 
 You can access the API server from outside the cluster without using `port-forward` by changing the service type to `NodePort` or `LoadBalancer`.
 
-```sh
+`values.yaml` for the `NodePort`:
+
+```yaml
 # Using NodePort
-$ cat values-nodeport.yaml
 service:
   type: NodePort
   nodePort: 32000
+```
 
+`values.yaml` for the `LoadBalancer`:
+
+```yaml
 # Using LoadBalancer
-$ cat values-lb.yaml
 service:
   type: LoadBalancer
 ```
