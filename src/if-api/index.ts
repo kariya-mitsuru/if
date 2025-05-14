@@ -38,13 +38,9 @@ const {
   UNSUPPORTED_CONTENT_TYPE,
 } = STRINGS;
 
-const CT_MANIFEST_YAML = 'application/vnd.if-manifest+yaml';
-const CT_MANIFEST_JSON = 'application/vnd.if-manifest+json';
 const CT_YAML = 'application/yaml';
 const CT_JSON = 'application/json';
-const CT_YAMLS = [CT_MANIFEST_YAML, CT_YAML];
-const CT_JSONS = [CT_MANIFEST_JSON, CT_JSON];
-const CT_VALID = [...CT_YAMLS, ...CT_JSONS];
+const CT_VALID = [CT_YAML, CT_JSON];
 
 const ERROR_LIST: readonly ErrorConstructor[] = Object.values(ERRORS);
 
@@ -62,10 +58,7 @@ const determineResponseType = (req: express.Request) => {
   }
 
   // Determine based on request Content-Type
-  const contentType = req.get('Content-Type');
-  const isJsonRequest =
-    contentType && CT_JSONS.some(ct => contentType.includes(ct));
-  return isJsonRequest ? CT_MANIFEST_JSON : CT_MANIFEST_YAML;
+  return req.get('Content-Type');
 };
 
 /**
@@ -122,13 +115,13 @@ const startServer = async () => {
   const execution = await getExecution();
 
   // Middleware for JSON requests
-  app.use(express.json({type: CT_JSONS}));
+  app.use(express.json({type: CT_JSON}));
 
   // Custom middleware for YAML requests
   app.use(
-    express.text({type: CT_YAMLS}),
+    express.text({type: CT_YAML}),
     (req: Request, res: Response, next: NextFunction): void => {
-      if (req.is(CT_YAMLS)) {
+      if (req.is(CT_YAML)) {
         try {
           req.body = load(req.body);
         } catch (err: any) {
@@ -203,7 +196,7 @@ const startServer = async () => {
 
         // Return response in the determined format
         const responseType = determineResponseType(req);
-        if (CT_YAMLS.includes(responseType)) {
+        if (responseType === CT_YAML) {
           const yamlData = dump(responseData, {noRefs: true});
           res.set('Content-Type', responseType);
           return res.status(200).send(yamlData);
