@@ -136,13 +136,9 @@ The containerized API server provides the same endpoints as the regular API serv
 $ curl http://localhost:3000/health
 
 # Process manifest (YAML request)
-$ curl -H "Content-Type: application/vnd.if-manifest+yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
-# Content-Type can also be application/yaml.
 $ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
 
 # Process manifest (JSON request)
-$ curl -H "Content-Type: application/vnd.if-manifest+json" --data-binary @manifest.json http://localhost:3000/v1/run
-# Content-Type can also be application/json.
 $ curl --json @manifest.json http://localhost:3000/v1/run
 ```
 
