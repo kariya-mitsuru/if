@@ -20,12 +20,14 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --ignore-scripts --no-fund
 
 # Install additional plugins
-RUN --mount=from=plugins,target=plugins \
+RUN --mount=src=plugins,target=plugins \
+    --mount=type=cache,target=/root/.npm,sharing=locked \
     if [ -r plugins/plugins.txt -a -s plugins/plugins.txt ]; then \
         if [ -r plugins/.npmrc -a -s plugins/.npmrc ]; then \
             cp plugins/.npmrc /root/.npmrc; \
         fi; \
         npm install --no-fund $(cat plugins/plugins.txt); \
+        rm -f /root/.npmrc; \
     fi
 
 # Compile TypeScript

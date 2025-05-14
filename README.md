@@ -187,58 +187,53 @@ $ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -e NODE_AU
 
 ### Building the Container Image
 
-As mentioned above, there are official images available, but you can also build your own container image using the provided `Dockerfile` and build script:
+As mentioned above, there are official images available, but you can also build your own container image using the provided `Dockerfile`:
 
 ```sh
-# Build and push the image to registry
-$ bin/build-image.sh --name myorg/if-api --tag v1.0.0
+# Build the container image
+$ docker build -t myorg/if-api:v1.0.0 .
 ```
-
-The build script uses Docker Buildx to create multi-platform images that support both amd64 (x86_64) and arm64 (Apple Silicon, etc.) architectures.
-
-Please note that the build script requires you to perform `docker login` in advance in order to push container images to the registry.
-
 ### Building the Container Image with external plugins
 
 You can also create container images that include external plugins in advance.
 
 ```sh
-$ cat plugins.txt
+$ cat plugins/plugins.txt
 carbon-intensity-plugin
 Green-Software-Foundation/if-github-plugin
-$ bin/build-image.sh --name myorg/if-api-with-plugins --tag v1.0.0 --plugins plugins.txt
+$ docker build -t myorg/if-api-with-plugins:v1.0.0 .
 ```
 
 A `.npmrc` is required if you need an access token, as well as if you want to add external plugins when starting the container.
 
 ```sh
-$ cat plugins.txt
+$ cat plugins/plugins.txt
 danuw/if-casdk-plugin
-$ cat .npmrc
+$ cat plugins/.npmrc
 //npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
 @Green-Software-Foundation:registry=https://npm.pkg.github.com/
-$ bin/build-image.sh --name myorg/if-api-with-plugins --tag v1.0.0 --plugins plugins.txt --npmrc .npmrc
+$ docker build -t myorg/if-api-with-plugins:v1.0.0 .
 ```
 
 ### Creating Slim Image
 
-As mentioned above, the built container image can install external plugins during startup. However, if you know that you don't need to install external plugins from git repositories like GitHub during startup, you can create a slimmer container image without git by specifying the `--slim` option in the container image build command.
+As mentioned above, the built container image can install external plugins during startup. However, if you know that you don't need to install external plugins from git repositories like GitHub during startup, you can create a slimmer container image without git by specifying the `--build-arg PACKAGES=` option in the container image build command.
 
 ```sh
 # Build custom image without git
-$ bin/build-image.sh --name myorg/if-api --tag v1.0.0 --slim
+$ docker build -t myorg/if-api-with-plugins:v1.0.0 --build-arg PACKAGES= .
 ```
 
-Note that specifying the `--slim` option does not affect the installation of external plugins during build time or the installation of npm packages during startup.
+Note that the absence of git does not affect the installation of external plugins during at build time or the installation of npm packages at startup.
 
 ```sh
 # Build custom image
-$ cat plugins.txt
+$ cat plugins/plugins.txt
 danuw/if-casdk-plugin
-$ cat .npmrc
+$ cat plugins/.npmrc
 //npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
 @Green-Software-Foundation:registry=https://npm.pkg.github.com/
-$ bin/build-image.sh --name myorg/if-api-with-plugins --tag v1.0.0 --plugins plugins.txt --npmrc .npmrc --slim
+$ docker build -t myorg/if-api-with-plugins:v1.0.0 --build-arg PACKAGES= .
 # Run custom image
 $ cat plugins-startup.txt
 carbon-intensity-plugin

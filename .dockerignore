@@ -8,3 +8,5 @@
 !tsconfig.json
 !tsconfig.build.json
 !bin/docker-entrypoint.sh
+!plugins/plugins.txt
+!plugins/.npmrc
