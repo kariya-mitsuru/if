@@ -387,24 +387,12 @@ paths:
       requestBody:
         description: IF Manifest
         content:
-          application/vnd.if-manifest+yaml:
-            schema:
-              $ref: '#/components/schemas/manifest'
-            examples:
-              sample:
-                $ref: '#/components/examples/request-yaml'
           application/yaml:
             schema:
               $ref: '#/components/schemas/manifest'
             examples:
               sample:
                 $ref: '#/components/examples/request-yaml'
-          application/vnd.if-manifest+json:
-            schema:
-              $ref: '#/components/schemas/manifest'
-            examples:
-              sample:
-                $ref: '#/components/examples/request-json'
           application/json:
             schema:
               $ref: '#/components/schemas/manifest'
@@ -416,24 +404,12 @@ paths:
         '200':
           description: Successful operation.
           content:
-            application/vnd.if-manifest+yaml:
-              schema:
-                $ref: '#/components/schemas/manifest'
-              examples:
-                success:
-                  $ref: '#/components/examples/response-yaml'
             application/yaml:
               schema:
                 $ref: '#/components/schemas/manifest'
               examples:
                 success:
                   $ref: '#/components/examples/response-yaml'
-            application/vnd.if-manifest+json:
-              schema:
-                $ref: '#/components/schemas/manifest'
-              examples:
-                success:
-                  $ref: '#/components/examples/response-json'
             application/json:
               schema:
                 $ref: '#/components/schemas/manifest'
