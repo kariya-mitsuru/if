@@ -100,7 +100,11 @@ const handModule = (method: string, pluginPath: string) => {
       pluginPath = parts[parts.length - 1];
     }
 
-    if (disabledPlugins.has(`${pluginPath}:${method}`)) {
+    pluginPath = path.normalize(pluginPath);
+    if (
+      pluginPath.startsWith('../') ||
+      disabledPlugins.has(`${pluginPath}:${method}`)
+    ) {
       throw new PluginInitializationError(
         INVALID_MODULE_PATH(`${pluginPath}:${method}`)
       );
