@@ -75,40 +75,16 @@ $ if-api -h 0.0.0.0 -p 8080
 If the API server is running, you can send a manifest in the request body and receive the results of `if-run` as a response.
 
 ```sh
-# Health check
-$ curl http://localhost:3000/health
-
-# Process manifest (YAML request)
+# Process manifest
 $ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
-
-# Process manifest (JSON request)
-$ curl --json @manifest.json http://localhost:3000/v1/run
 ```
 
-With `if-api`, it's possible to use not only builtin plugins but also external plugins installed in the execution environment. However, for security reasons, the following builtin plugins are disabled by default:
+Note that in `if-api`, the following builtin plugins are disabled by default for security reasons.
 - Shell
 - CSVImport
 - CSVLookup
 
-To enable these, or conversely to disable other plugins, you can control them by specifying a file containing the plugins to be disabled using the startup option `--disabledPlugins <filename>`.
-In the file, specify one plugin per line in the format `plugin-path:method-name`. For builtin plugins, specify them in the format `builtin:method-name`.
-
-```sh
-# Disable builtin:Shell and if-github-plugin:Github. Do not disable builtin:CSVImport and builtin:CSVLookup.
-$ cat disabled-plugins.txt
-builtin:Shell
-if-github-plugin:Github
-$ if-api --disabledPlugins disabled-plugins.txt
-```
-
-Note that warnings output when executing external plugins can be suppressed by specifying the `--disableExternalPluginWarning` command line option at startup.
-
-The options `--observe`, `--aggregate`, and `--compute` for running only specific phases of `if-run` can be specified as query parameters.
-
-```sh
-# Execute only the compute phase
-$ curl -H "Content-Type: application/vnd.if-manifest+yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run --url-query compute=true
-```
+Please refer to the documentation for detailed usage instructions, including how to enable these plugins.
 
 ## Documentation
 
