@@ -86,6 +86,131 @@ Note that in `if-api`, the following builtin plugins are disabled by default for
 
 Please refer to the documentation for detailed usage instructions, including how to enable these plugins.
 
+## Using Docker Container
+
+The Impact Framework API server can also be run as a Docker container.
+The official image is provided at `ghcr.io/green-software-foundation/if`.
+
+### Running the Container
+
+Run a container using the built image:
+
+```sh
+# Run with default port (3000)
+$ docker run --rm -p 3000:3000 ghcr.io/green-software-foundation/if
+
+# Run with custom port
+$ docker run --rm -p 8080:3000 ghcr.io/green-software-foundation/if
+```
+
+### Using the containerized API server
+
+The containerized API server provides the same endpoints as the regular API server:
+
+```sh
+# Health check
+$ curl http://localhost:3000/health
+
+# Process manifest (YAML request)
+$ curl -H "Content-Type: application/yaml" --data-binary @manifest.yaml http://localhost:3000/v1/run
+
+# Process manifest (JSON request)
+$ curl --json @manifest.json http://localhost:3000/v1/run
+```
+
+### Adding external plugins at startup time
+You can add any external plugins at startup time by mounting a file that lists the plugins to `/app/plugins.txt`.
+```sh
+$ cat plugins.txt
+carbon-intensity-plugin
+Green-Software-Foundation/if-github-plugin
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt ghcr.io/green-software-foundation/if
+```
+
+The contents of `/app/plugins.txt` are used directly as arguments for `npm install`. For available formats, refer to: https://docs.npmjs.com/cli/v8/commands/npm-install
+
+If the plugin itself or packages it depends on are private, you'll need to mount an `.npmrc` file for the access token required to install packages.
+```sh
+$ cat plugins.txt
+@myscope/myplugin
+$ cat .npmrc
+//registry.npmjs.org/:_authToken=<YOUR_AUTH_TOKEN>
+@myscope:registry=https://registry.npmjs.org/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/green-software-foundation/if
+```
+
+For `.npmrc` format reference: https://docs.npmjs.com/cli/v8/configuring-npm/npmrc
+
+Note that if the plugin itself or packages it depends on are in GitHub Packages, a personal access token (classic) with `read:packages` permission is required even for public packages.
+```sh
+$ cat plugins.txt
+danuw/if-casdk-plugin
+$ cat .npmrc
+//npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/green-software-foundation/if
+```
+
+Alternatively, the access token can also be extracted to an environment variable.
+```sh
+$ cat plugins.txt
+@myscope/myplugin
+$ cat .npmrc
+//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+@myscope:registry=https://registry.npmjs.org/
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins.txt:/app/plugins.txt -e NODE_AUTH_TOKEN=<YOUR_AUTH_TOKEN> -v $(pwd)/.npmrc:/app/.npmrc ghcr.io/green-software-foundation/if
+```
+
+### Building the Container Image
+
+As mentioned above, there are official images available, but you can also build your own container image using the provided `Dockerfile`:
+
+```sh
+# Build the container image
+$ docker build -t myorg/if:v1.0.0 .
+```
+### Creating Slim Image
+
+As mentioned above, the built container image can install external plugins during startup. However, if you know that you don't need to install external plugins from git repositories like GitHub during startup, you can create a slimmer container image without git by specifying the `--build-arg PACKAGES=` option in the container image build command.
+
+```sh
+# Build custom image without git
+$ docker build -t myorg/if:v1.0.0-slim --build-arg PACKAGES= .
+```
+
+Note that the absence of git does not affect the installation of npm packages.
+
+```sh
+# Run the custom image with the npm package
+$ cat plugins-startup.txt
+carbon-intensity-plugin
+$ docker run --rm -p 3000:3000 -v $(pwd)/plugins-startup.txt:/app/plugins.txt myorg/if:v1.0.0-slim
+```
+
+### Building the Container Image with external plugins
+
+You can also create container images that include external plugins in advance.
+
+```sh
+$ cat with-plugins/plugins.txt
+carbon-intensity-plugin
+Green-Software-Foundation/if-github-plugin
+$ docker build -t myorg/if-with-plugins:v1.0.0 with-plugins
+```
+
+A `.npmrc` is required if you need an access token, as well as if you want to add external plugins when starting the container.
+
+```sh
+$ cat with-plugins/plugins.txt
+danuw/if-casdk-plugin
+$ cat with-plugins/.npmrc
+//npm.pkg.github.com/:_authToken=<YOUR_PERSONAL_ACCESS_TOKEN>
+@Green-Software-Foundation:registry=https://npm.pkg.github.com/
+$ docker build -t myorg/if-with-plugins:v1.0.0 with-plugins
+```
+
+Note that, as with regular images, you can also create a slim image without git by adding the `--build-arg PACKAGES=` option.
+
 ## Documentation
 
 Please read our documentation at [if.greensoftware.foundation](https://if.greensoftware.foundation/)
